@@ -1,0 +1,12 @@
+# compiled output
+game
+*.o
+*.out
+
+# clangd
+compile_flags.txt
+.clangd/
+.cache/
+
+# macOS
+.DS_Store
