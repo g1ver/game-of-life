@@ -12,18 +12,23 @@
 #define SCREEN_SIZE (WIDTH * HEIGHT)
 
 void draw_screen(int *buf, Texture2D texture, Color *pixels);
-void tick(int *screenBuffer, int *updateBuffer, int size);
+void tick(int **screenBuffer, int **updateBuffer, int size);
 void prepare_buffers(int *screenBuffer, int *updateBuffer, int size);
 int count_neighbors(int i, int *buf, int size);
 
 int main(void) {
   srand(time(NULL));
+
   int screenBuffer[SCREEN_SIZE];
   int updateBuffer[SCREEN_SIZE];
+
+  int *ptrScreenBuf = screenBuffer;
+  int *ptrUpdateBuf = updateBuffer;
+
   prepare_buffers(screenBuffer, updateBuffer, SCREEN_SIZE);
 
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "game of life");
-  SetTargetFPS(24);
+  SetTargetFPS(60);
 
   Image image = GenImageColor(WIDTH, HEIGHT, BLACK);
   Texture2D texture = LoadTextureFromImage(image);
@@ -34,7 +39,7 @@ int main(void) {
   while (!WindowShouldClose()) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
-    tick(screenBuffer, updateBuffer, SCREEN_SIZE);
+    tick(&ptrScreenBuf, &ptrUpdateBuf, SCREEN_SIZE);
     draw_screen(screenBuffer, texture, pixels);
     EndDrawing();
   }
@@ -47,30 +52,35 @@ int main(void) {
 // 2. Live cell with 2 or 3 neighbors lives on
 // 3. Live cell with more than 3 live neighbors dies
 // 4. Dead cell with exactly 3 live neighbors becomes alive
-void tick(int *screenBuffer, int *updateBuffer, int size) {
+void tick(int **screenBuffer, int **updateBuffer, int size) {
+  int *src = *screenBuffer;
+  int *dst = *updateBuffer;
+
   for (int i = 0; i < size; i++) {
-    int aliveNeighbors = count_neighbors(i, screenBuffer, size);
-    int alive = screenBuffer[i];
+    int aliveNeighbors = count_neighbors(i, src, size);
+    int alive = src[i];
 
     if (alive && aliveNeighbors < 2) {
-      updateBuffer[i] = 0;
+      dst[i] = 0;
     } else if (alive && aliveNeighbors <= 3) {
-      updateBuffer[i] = 1;
+      dst[i] = 1;
     } else if (alive && aliveNeighbors > 3) {
-      updateBuffer[i] = 0;
+      dst[i] = 0;
     } else if (!alive && aliveNeighbors == 3) {
-      updateBuffer[i] = 1;
+      dst[i] = 1;
     } else {
-      updateBuffer[i] = 0;
+      dst[i] = 0;
     }
   }
 
-  memcpy(screenBuffer, updateBuffer, SCREEN_SIZE * sizeof(int));
+  int *temp = *screenBuffer;
+  *screenBuffer = *updateBuffer;
+  *updateBuffer = temp;
 }
 
 void draw_screen(int *buf, Texture2D texture, Color *pixels) {
   for (int i = 0; i < SCREEN_SIZE; i++) {
-    pixels[i] = buf[i] ? GRAY : BLACK;
+    pixels[i] = buf[i] ? RAYWHITE : BLACK;
   }
 
   UpdateTexture(texture, pixels);
